@@ -1,0 +1,19 @@
+{
+  "name": "instacharmss",
+  "version": "1.0.0",
+  "description": "Componente javascript para historias en charmss.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/macrodatum/instacharmss.git"
+  },
+  "author": "Ramon82 Luis Corredor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/macrodatum/instacharmss/issues"
+  },
+  "homepage": "https://github.com/macrodatum/instacharmss#readme"
+}
