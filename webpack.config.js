@@ -46,7 +46,7 @@ module.exports = {
 
       return `${name}${suffix}${extension}`;
     },
-    library: 'Zuck'
+    library: 'Instacharmss'
   },
   optimization: {
     minimize: !devMode,

@@ -1,6 +1,6 @@
 {
   "name": "instacharmss",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Componente javascript para historias en charmss.com",
   "main": "zuck.js",
   "repository": {
@@ -78,4 +78,5 @@
       "@babel/plugin-transform-runtime"
     ]
   }
+  
 }
