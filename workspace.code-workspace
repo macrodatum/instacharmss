@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "..\\zuck.js\\src"
+		},
+		{
+			"path": "..\\zuck.js\\dist"
+		}
+	],
+	"settings": {}
+}

@@ -347,6 +347,7 @@ module.exports = (window => {
                         <div class="right">
                           <span class="time">${get(currentStoryItem, 'timeAgo')}</span>
                           <span class="loading"></span>
+                          <img src="https://www.charmss.com/assets/img/logo.png" alt="Charmss">
                           <a class="close" tabIndex="2">&times;</a>
                         </div>
                       </div>
