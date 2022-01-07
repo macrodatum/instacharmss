@@ -4,289 +4,289 @@
     MIT License
 */
 module.exports = (window => {
-    /* Utilities */
-    const query = function (qs) {
-      return document.querySelectorAll(qs)[0];
-    };
-  
-    const get = function (array, what) {
-      if (array) {
-        return array[what] || '';
-      } else {
-        return '';
-      }
-    };
-  
-    const each = function (arr, func) {
-      if (arr) {
-        const total = arr.length;
-  
-        for (let i = 0; i < total; i++) {
-          func(i, arr[i]);
-        }
-      }
-    };
-  
-    const setVendorVariable = function (ref, variable, value) {
-      const variables = [
-        variable.toLowerCase(),
-        `webkit${variable}`,
-        `MS${variable}`,
-        `o${variable}`
-      ];
-  
-      each(variables, (i, val) => {
-        ref[val] = value;
-      });
-    };
-  
-    const addVendorEvents = function (el, func, event) {
-      const events = [
-        event.toLowerCase(),
-        `webkit${event}`,
-        `MS${event}`,
-        `o${event}`
-      ];
-  
-      each(events, (i, val) => {
-        el.addEventListener(val, func, false);
-      });
-    };
-  
-    const onAnimationEnd = function (el, func) {
-      addVendorEvents(el, func, 'AnimationEnd');
-    };
-  
-    const onTransitionEnd = function (el, func) {
-      if (!el.transitionEndEvent) {
-        el.transitionEndEvent = true;
-  
-        addVendorEvents(el, func, 'TransitionEnd');
-      }
-    };
-  
-    const prepend = function (parent, child) {
-      if (parent.firstChild) {
-        parent.insertBefore(child, parent.firstChild);
-      } else {
-        parent.appendChild(child);
-      }
-    };
-  
-    const generateId = () => {
-      return 'stories-' + Math.random().toString(36).substr(2, 9);
-    };
-  
-    /* Zuckera */
-    const ZuckJS = function (timeline, options) {
-      const zuck = this;
-      const option = function (name, prop) {
-        const type = function (what) {
-          return typeof what !== 'undefined';
-        };
-  
-        if (prop) {
-          if (type(options[name])) {
-            return type(options[name][prop])
-              ? options[name][prop]
-              : optionsDefault[name][prop];
-          } else {
-            return optionsDefault[name][prop];
-          }
-        } else {
-          return type(options[name]) ? options[name] : optionsDefault[name];
-        }
-      };
-  
-      const fullScreen = function (elem, cancel) {
-        const func = 'RequestFullScreen';
-        const elFunc = 'requestFullScreen'; // crappy vendor prefixes.
-  
-        try {
-          if (cancel) {
-            if (
-              document.fullscreenElement ||
-              document.webkitFullscreenElement ||
-              document.mozFullScreenElement ||
-              document.msFullscreenElement
-            ) {
-              if (document.exitFullscreen) {
-                document.exitFullscreen()
-                  .catch(() => {});
-              } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen()
-                  .catch(() => {});
-              } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen()
-                  .catch(() => {});
-              }
-            }
-          } else {
-            if (elem[elFunc]) {
-              elem[elFunc]();
-            } else if (elem[`ms${func}`]) {
-              elem[`ms${func}`]();
-            } else if (elem[`moz${func}`]) {
-              elem[`moz${func}`]();
-            } else if (elem[`webkit${func}`]) {
-              elem[`webkit${func}`]();
-            }
-          }
-        } catch (e) {
-          console.warn('[Zuck.js] Can\'t access fullscreen');
-        }
-      };
-  
-      const translate = function (element, to, duration, ease) {
-        const direction = to > 0 ? 1 : -1;
-        const to3d = (Math.abs(to) / query('#zuck-modal').offsetWidth) * 90 * direction;
-  
-        if (option('cubeEffect')) {
-          const scaling = to3d === 0 ? 'scale(0.95)' : 'scale(0.930,0.930)';
-  
-          setVendorVariable(
-            query('#zuck-modal-content').style,
-            'Transform',
-            scaling
-          );
-  
-          if (to3d < -90 || to3d > 90) {
-            return false;
-          }
-        }
-  
-        const transform = !option('cubeEffect')
-          ? `translate3d(${to}px, 0, 0)`
-          : `rotateY(${to3d}deg)`;
-  
-        if (element) {
-          setVendorVariable(element.style, 'TransitionTimingFunction', ease);
-          setVendorVariable(element.style, 'TransitionDuration', `${duration}ms`);
-          setVendorVariable(element.style, 'Transform', transform);
-        }
-      };
-  
-      const findPos = function (obj, offsetY, offsetX, stop) {
-        let curleft = 0;
-        let curtop = 0;
-  
-        if (obj) {
-          if (obj.offsetParent) {
-            do {
-              curleft += obj.offsetLeft;
-              curtop += obj.offsetTop;
-  
-              if (obj === stop) {
-                break;
-              }
-            } while ((obj = obj.offsetParent));
-          }
-  
-          if (offsetY) {
-            curtop = curtop - offsetY;
-          }
-  
-          if (offsetX) {
-            curleft = curleft - offsetX;
-          }
-        }
-  
-        return [curleft, curtop];
-      };
-  
-      if (typeof timeline === 'string') {
-        timeline = document.getElementById(timeline);
-      }
-  
-      if (!timeline.id) {
-        timeline.setAttribute('id', generateId());
-      }
-  
-      const timeAgo = function (time) {
-        time = Number(time) * 1000;
-  
-        const dateObj = new Date(time);
-        const dateStr = dateObj.getTime();
-        let seconds = (new Date().getTime() - dateStr) / 1000;
-  
-        const language = option('language', 'time');
-  
-        const formats = [
-          [60, ` ${language.seconds}`, 1], // 60
-          [120, `1 ${language.minute}`, ''], // 60*2
-          [3600, ` ${language.minutes}`, 60], // 60*60, 60
-          [7200, `1 ${language.hour}`, ''], // 60*60*2
-          [86400, ` ${language.hours}`, 3600], // 60*60*24, 60*60
-          [172800, ` ${language.yesterday}`, ''], // 60*60*24*2
-          [604800, ` ${language.days}`, 86400]
-        ];
-  
-        let currentFormat = 1;
-        if (seconds < 0) {
-          seconds = Math.abs(seconds);
-  
-          currentFormat = 2;
-        }
-  
-        let result = false;
-        each(formats, (formatKey, format) => {
-          if (seconds < format[0] && !result) {
-            if (typeof format[2] === 'string') {
-              result = format[currentFormat];
-            } else if (format !== null) {
-              result = Math.floor(seconds / format[2]) + format[1];
-            }
-          }
-        });
-  
-        if (!result) {
-          const day = dateObj.getDate();
-          const month = dateObj.getMonth();
-          const year = dateObj.getFullYear();
-  
-          return `${day}/${month + 1}/${year}`;
-        } else {
-          return result;
-        }
-      };
-  
-      /* options */
-      const id = timeline.id;
-      const optionsDefault = {
-        rtl: false,
-        skin: 'snapgram',
-        avatars: true,
-        stories: [],
-        backButton: true,
-        backNative: false,
-        paginationArrows: false,
-        previousTap: true,
-        autoFullScreen: false,
-        openEffect: true,
-        cubeEffect: false,
-        list: false,
-        localStorage: true,
-        callbacks: {
-          onOpen: function (storyId, callback) {
-            callback();
-          },
-          onView: function (storyId) {},
-          onEnd: function (storyId, callback) {
-            callback();
-          },
-          onClose: function (storyId, callback) {
-            callback();
-          },
-          onNextItem: function (storyId, nextStoryId, callback) {
-            callback();
-          },
-          onNavigateItem: function (storyId, nextStoryId, callback) {
-            callback();
-          }
-        },
-        template: {
-          timelineItem (itemData) {
-            return `
+            /* Utilities */
+            const query = function(qs) {
+                return document.querySelectorAll(qs)[0];
+            };
+
+            const get = function(array, what) {
+                if (array) {
+                    return array[what] || '';
+                } else {
+                    return '';
+                }
+            };
+
+            const each = function(arr, func) {
+                if (arr) {
+                    const total = arr.length;
+
+                    for (let i = 0; i < total; i++) {
+                        func(i, arr[i]);
+                    }
+                }
+            };
+
+            const setVendorVariable = function(ref, variable, value) {
+                const variables = [
+                    variable.toLowerCase(),
+                    `webkit${variable}`,
+                    `MS${variable}`,
+                    `o${variable}`
+                ];
+
+                each(variables, (i, val) => {
+                    ref[val] = value;
+                });
+            };
+
+            const addVendorEvents = function(el, func, event) {
+                const events = [
+                    event.toLowerCase(),
+                    `webkit${event}`,
+                    `MS${event}`,
+                    `o${event}`
+                ];
+
+                each(events, (i, val) => {
+                    el.addEventListener(val, func, false);
+                });
+            };
+
+            const onAnimationEnd = function(el, func) {
+                addVendorEvents(el, func, 'AnimationEnd');
+            };
+
+            const onTransitionEnd = function(el, func) {
+                if (!el.transitionEndEvent) {
+                    el.transitionEndEvent = true;
+
+                    addVendorEvents(el, func, 'TransitionEnd');
+                }
+            };
+
+            const prepend = function(parent, child) {
+                if (parent.firstChild) {
+                    parent.insertBefore(child, parent.firstChild);
+                } else {
+                    parent.appendChild(child);
+                }
+            };
+
+            const generateId = () => {
+                return 'stories-' + Math.random().toString(36).substr(2, 9);
+            };
+
+            /* Zuckera */
+            const ZuckJS = function(timeline, options) {
+                    const zuck = this;
+                    const option = function(name, prop) {
+                        const type = function(what) {
+                            return typeof what !== 'undefined';
+                        };
+
+                        if (prop) {
+                            if (type(options[name])) {
+                                return type(options[name][prop]) ?
+                                    options[name][prop] :
+                                    optionsDefault[name][prop];
+                            } else {
+                                return optionsDefault[name][prop];
+                            }
+                        } else {
+                            return type(options[name]) ? options[name] : optionsDefault[name];
+                        }
+                    };
+
+                    const fullScreen = function(elem, cancel) {
+                        const func = 'RequestFullScreen';
+                        const elFunc = 'requestFullScreen'; // crappy vendor prefixes.
+
+                        try {
+                            if (cancel) {
+                                if (
+                                    document.fullscreenElement ||
+                                    document.webkitFullscreenElement ||
+                                    document.mozFullScreenElement ||
+                                    document.msFullscreenElement
+                                ) {
+                                    if (document.exitFullscreen) {
+                                        document.exitFullscreen()
+                                            .catch(() => {});
+                                    } else if (document.mozCancelFullScreen) {
+                                        document.mozCancelFullScreen()
+                                            .catch(() => {});
+                                    } else if (document.mozCancelFullScreen) {
+                                        document.mozCancelFullScreen()
+                                            .catch(() => {});
+                                    }
+                                }
+                            } else {
+                                if (elem[elFunc]) {
+                                    elem[elFunc]();
+                                } else if (elem[`ms${func}`]) {
+                                    elem[`ms${func}`]();
+                                } else if (elem[`moz${func}`]) {
+                                    elem[`moz${func}`]();
+                                } else if (elem[`webkit${func}`]) {
+                                    elem[`webkit${func}`]();
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[Zuck.js] Can\'t access fullscreen');
+                        }
+                    };
+
+                    const translate = function(element, to, duration, ease) {
+                        const direction = to > 0 ? 1 : -1;
+                        const to3d = (Math.abs(to) / query('#zuck-modal').offsetWidth) * 90 * direction;
+
+                        if (option('cubeEffect')) {
+                            const scaling = to3d === 0 ? 'scale(0.95)' : 'scale(0.930,0.930)';
+
+                            setVendorVariable(
+                                query('#zuck-modal-content').style,
+                                'Transform',
+                                scaling
+                            );
+
+                            if (to3d < -90 || to3d > 90) {
+                                return false;
+                            }
+                        }
+
+                        const transform = !option('cubeEffect') ?
+                            `translate3d(${to}px, 0, 0)` :
+                            `rotateY(${to3d}deg)`;
+
+                        if (element) {
+                            setVendorVariable(element.style, 'TransitionTimingFunction', ease);
+                            setVendorVariable(element.style, 'TransitionDuration', `${duration}ms`);
+                            setVendorVariable(element.style, 'Transform', transform);
+                        }
+                    };
+
+                    const findPos = function(obj, offsetY, offsetX, stop) {
+                        let curleft = 0;
+                        let curtop = 0;
+
+                        if (obj) {
+                            if (obj.offsetParent) {
+                                do {
+                                    curleft += obj.offsetLeft;
+                                    curtop += obj.offsetTop;
+
+                                    if (obj === stop) {
+                                        break;
+                                    }
+                                } while ((obj = obj.offsetParent));
+                            }
+
+                            if (offsetY) {
+                                curtop = curtop - offsetY;
+                            }
+
+                            if (offsetX) {
+                                curleft = curleft - offsetX;
+                            }
+                        }
+
+                        return [curleft, curtop];
+                    };
+
+                    if (typeof timeline === 'string') {
+                        timeline = document.getElementById(timeline);
+                    }
+
+                    if (!timeline.id) {
+                        timeline.setAttribute('id', generateId());
+                    }
+
+                    const timeAgo = function(time) {
+                        time = Number(time) * 1000;
+
+                        const dateObj = new Date(time);
+                        const dateStr = dateObj.getTime();
+                        let seconds = (new Date().getTime() - dateStr) / 1000;
+
+                        const language = option('language', 'time');
+
+                        const formats = [
+                            [60, ` ${language.seconds}`, 1], // 60
+                            [120, `1 ${language.minute}`, ''], // 60*2
+                            [3600, ` ${language.minutes}`, 60], // 60*60, 60
+                            [7200, `1 ${language.hour}`, ''], // 60*60*2
+                            [86400, ` ${language.hours}`, 3600], // 60*60*24, 60*60
+                            [172800, ` ${language.yesterday}`, ''], // 60*60*24*2
+                            [604800, ` ${language.days}`, 86400]
+                        ];
+
+                        let currentFormat = 1;
+                        if (seconds < 0) {
+                            seconds = Math.abs(seconds);
+
+                            currentFormat = 2;
+                        }
+
+                        let result = false;
+                        each(formats, (formatKey, format) => {
+                            if (seconds < format[0] && !result) {
+                                if (typeof format[2] === 'string') {
+                                    result = format[currentFormat];
+                                } else if (format !== null) {
+                                    result = Math.floor(seconds / format[2]) + format[1];
+                                }
+                            }
+                        });
+
+                        if (!result) {
+                            const day = dateObj.getDate();
+                            const month = dateObj.getMonth();
+                            const year = dateObj.getFullYear();
+
+                            return `${day}/${month + 1}/${year}`;
+                        } else {
+                            return result;
+                        }
+                    };
+
+                    /* options */
+                    const id = timeline.id;
+                    const optionsDefault = {
+                            rtl: false,
+                            skin: 'snapgram',
+                            avatars: true,
+                            stories: [],
+                            backButton: true,
+                            backNative: false,
+                            paginationArrows: false,
+                            previousTap: true,
+                            autoFullScreen: false,
+                            openEffect: true,
+                            cubeEffect: false,
+                            list: false,
+                            localStorage: true,
+                            callbacks: {
+                                onOpen: function(storyId, callback) {
+                                    callback();
+                                },
+                                onView: function(storyId) {},
+                                onEnd: function(storyId, callback) {
+                                    callback();
+                                },
+                                onClose: function(storyId, callback) {
+                                    callback();
+                                },
+                                onNextItem: function(storyId, nextStoryId, callback) {
+                                    callback();
+                                },
+                                onNavigateItem: function(storyId, nextStoryId, callback) {
+                                    callback();
+                                }
+                            },
+                            template: {
+                                timelineItem(itemData) {
+                                    return `
               <div class="story ${get(itemData, 'seen') === true ? 'seen' : ''}">
                 <a class="item-link" href="${get(itemData, 'link')}">
                   <span class="item-preview">
@@ -304,11 +304,11 @@ module.exports = (window => {
                 
                 <ul class="items"></ul>
               </div>`;
-          },
-  
-          timelineStoryItem (itemData) {
-            const reserved = ['id', 'seen', 'src', 'link', 'linkText', 'time', 'type', 'length', 'preview'];
-            let attributes = `
+                                },
+
+                                timelineStoryItem(itemData) {
+                                    const reserved = ['id', 'seen', 'src', 'link', 'linkText', 'time', 'type', 'length', 'preview'];
+                                    let attributes = `
               href="${get(itemData, 'src')}"
               data-link="${get(itemData, 'link')}"
               data-linkText="${get(itemData, 'linkText')}"
@@ -316,20 +316,20 @@ module.exports = (window => {
               data-type="${get(itemData, 'type')}"
               data-length="${get(itemData, 'length')}"
             `;
-  
-            for (const dataKey in itemData) {
-              if (reserved.indexOf(dataKey) === -1) {
-                attributes += ` data-${dataKey}="${itemData[dataKey]}"`;
-              }
-            }
-  
-            return `<a ${attributes}>
+
+                                    for (const dataKey in itemData) {
+                                        if (reserved.indexOf(dataKey) === -1) {
+                                            attributes += ` data-${dataKey}="${itemData[dataKey]}"`;
+                                        }
+                                    }
+
+                                    return `<a ${attributes}>
                       <img loading="auto" src="${get(itemData, 'preview')}" />
                     </a>`;
-          },
-  
-          viewerItem (storyData, currentStoryItem) {
-            return `<div class="story-viewer">
+                                },
+
+                                viewerItem(storyData, currentStoryItem) {
+                                    return `<div class="story-viewer">
                       <div class="head">
                         <div class="left">
                           ${option('backButton') ? '<a class="back">&lsaquo;</a>' : ''}
@@ -347,7 +347,7 @@ module.exports = (window => {
                         <div class="right">
                           <span class="time">${get(currentStoryItem, 'timeAgo')}</span>
                           <span class="loading"></span>
-                          <img src="https://www.charmss.com/assets/img/logo.png" alt="Charmss">
+                          <img src="https://media.charmss.com/resources/images/livecharmss180.png" alt="Charmss">
                           <a class="close" tabIndex="2">&times;</a>
                         </div>
                       </div>
@@ -1494,4 +1494,3 @@ module.exports = (window => {
   
     return ZuckJS;
   })(window || {});
-  
